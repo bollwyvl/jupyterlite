@@ -16,7 +16,8 @@ PIPLITE_URLS = "pipliteUrls"
 PIPLITE_INDEX_SCHEMA = "piplite.schema.v0.json"
 #: where we put wheels, for now
 PYPI_WHEELS = "pypi"
-
+#: pattern of things to replace with hyphens in pypi names
+PYPI_CANONICAL_HYPHEN = r"[-_.]+"
 
 from ..constants import (
     ALL_JSON,
@@ -256,7 +257,6 @@ class PipliteAddon(BaseAddon):
         )
         self.maybe_timestamp(whl_meta)
 
-
 def list_wheels(wheel_dir):
     """get all wheels we know how to handle in a directory"""
     return sorted(sum([[*wheel_dir.glob(f"*{whl}")] for whl in ALL_WHL], []))
@@ -296,7 +296,12 @@ def get_wheel_fileinfo(whl_path):
         "yanked_reason": None,
     }
 
-    return metadata.name, metadata.version, release
+    return canonicalize_name(metadata.name), metadata.version, release
+
+
+def canonicalize_name(raw_name: str):
+    """return the canonical package name used for e.g. PyPI urls and tarball names."""
+    return re.sub(PYPI_CANONICAL_HYPHEN.sub, "-", raw_name, flags=re.G).lower()
 
 
 def get_wheel_index(wheels, metadata=None):

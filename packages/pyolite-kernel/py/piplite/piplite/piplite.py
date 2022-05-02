@@ -7,6 +7,7 @@ from unittest.mock import patch
 from micropip._micropip import PACKAGE_MANAGER as _MP_PACKAGE_MANAGER
 from micropip._micropip import _get_pypi_json as _MP_GET_PYPI_JSON
 from micropip._micropip import fetch_string as _MP_FETCH_STRING
+from py.jupyterlite.src.jupyterlite.addons.piplite import canonicalize_name
 
 #: a list of Warehouse-like API endpoints or derived multi-package all.json
 _PIPLITE_URLS = []
@@ -19,6 +20,9 @@ _PIPLITE_DISABLE_PYPI = False
 
 #: a well-known file name respected by the rest of the build chain
 ALL_JSON = "/all.json"
+
+#: pattern of things to replace with hyphens in pypi names
+PYPI_CANONICAL_HYPHEN = r"[-_.]+"
 
 
 class PiplitePyPIDisabled(ValueError):
@@ -52,22 +56,27 @@ async def _get_pypi_json_from_index(pkgname, piplite_url):
 
 
 async def _get_pypi_json(pkgname):
+    canonical_name = canonicalize_name(pkgname)
     for piplite_url in _PIPLITE_URLS:
         if piplite_url.split("?")[0].split("#")[0].endswith(ALL_JSON):
-            pypi_json_from_index = await _get_pypi_json_from_index(pkgname, piplite_url)
+            pypi_json_from_index = await _get_pypi_json_from_index(
+                canonical_name,
+                piplite_url
+            )
             if pypi_json_from_index:
                 return pypi_json_from_index
             continue
         else:
             try:
-                url = f"{piplite_url}{pkgname}/json"
+                url = f"{piplite_url}{canonical_name}/json"
                 return json.loads(await _MP_FETCH_STRING(url))
             except Exception:
                 pass
 
     if _PIPLITE_DISABLE_PYPI:
         raise PiplitePyPIDisabled(
-            f"{pkgname} could not be installed: PyPI fallback is disabled"
+            f"{pkgname}/{canonical_name} could not be installed:"
+            " PyPI fallback is disabled"
         )
     return await _MP_GET_PYPI_JSON(pkgname)
 
