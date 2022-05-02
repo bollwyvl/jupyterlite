@@ -1,13 +1,13 @@
 import asyncio
 import importlib
 import json
+import re
 from typing import List, Union
 from unittest.mock import patch
 
 from micropip._micropip import PACKAGE_MANAGER as _MP_PACKAGE_MANAGER
 from micropip._micropip import _get_pypi_json as _MP_GET_PYPI_JSON
 from micropip._micropip import fetch_string as _MP_FETCH_STRING
-from py.jupyterlite.src.jupyterlite.addons.piplite import canonicalize_name
 
 #: a list of Warehouse-like API endpoints or derived multi-package all.json
 _PIPLITE_URLS = []
@@ -55,13 +55,17 @@ async def _get_pypi_json_from_index(pkgname, piplite_url):
     return pkg
 
 
+def canonicalize_name(raw_name: str):
+    """return the canonical package name used for e.g. PyPI urls and tarball names."""
+    return re.sub(PYPI_CANONICAL_HYPHEN, "-", raw_name).lower()
+
+
 async def _get_pypi_json(pkgname):
     canonical_name = canonicalize_name(pkgname)
     for piplite_url in _PIPLITE_URLS:
         if piplite_url.split("?")[0].split("#")[0].endswith(ALL_JSON):
             pypi_json_from_index = await _get_pypi_json_from_index(
-                canonical_name,
-                piplite_url
+                canonical_name, piplite_url
             )
             if pypi_json_from_index:
                 return pypi_json_from_index

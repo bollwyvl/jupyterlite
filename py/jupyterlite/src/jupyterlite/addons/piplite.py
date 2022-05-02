@@ -257,6 +257,7 @@ class PipliteAddon(BaseAddon):
         )
         self.maybe_timestamp(whl_meta)
 
+
 def list_wheels(wheel_dir):
     """get all wheels we know how to handle in a directory"""
     return sorted(sum([[*wheel_dir.glob(f"*{whl}")] for whl in ALL_WHL], []))
@@ -300,8 +301,8 @@ def get_wheel_fileinfo(whl_path):
 
 
 def canonicalize_name(raw_name: str):
-    """return the canonical package name used for e.g. PyPI urls and tarball names."""
-    return re.sub(PYPI_CANONICAL_HYPHEN.sub, "-", raw_name, flags=re.G).lower()
+    """Return the canonical package name used for e.g. PyPI urls and tarball names."""
+    return re.sub(PYPI_CANONICAL_HYPHEN, "-", raw_name).lower()
 
 
 def get_wheel_index(wheels, metadata=None):
